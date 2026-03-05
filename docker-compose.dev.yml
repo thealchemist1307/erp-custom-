@@ -14,6 +14,7 @@ services:
       DB_PORT: "3306"
       MYSQL_ROOT_PASSWORD: admin
       MARIADB_ROOT_PASSWORD: admin
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
 
   configurator:
     image: frappe/erpnext:v15.81.1
@@ -35,6 +36,7 @@ services:
       REDIS_CACHE: redis-cache:6379
       REDIS_QUEUE: redis-queue:6379
       SOCKETIO_PORT: "9000"
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
     volumes:
       - inkcast-dev-sites:/home/frappe/frappe-bench/sites
       - inkcast-dev-logs:/home/frappe/frappe-bench/logs
@@ -88,6 +90,8 @@ services:
         else
           echo "Custom app source not found in apps/inkcast_custom, skipping custom app install";
         fi;
+    environment:
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
 
   db:
     image: mariadb:10.6
@@ -124,6 +128,7 @@ services:
       UPSTREAM_REAL_IP_RECURSIVE: "off"
       PROXY_READ_TIMEOUT: 120
       CLIENT_MAX_BODY_SIZE: 50m
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
     volumes:
       - inkcast-dev-sites:/home/frappe/frappe-bench/sites
       - inkcast-dev-logs:/home/frappe/frappe-bench/logs
@@ -136,6 +141,8 @@ services:
     networks: [frappe_network]
     restart: unless-stopped
     command: [bench, worker, --queue, "long,default,short"]
+    environment:
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
     volumes:
       - inkcast-dev-sites:/home/frappe/frappe-bench/sites
       - inkcast-dev-logs:/home/frappe/frappe-bench/logs
@@ -146,6 +153,8 @@ services:
     networks: [frappe_network]
     restart: unless-stopped
     command: [bench, worker, --queue, "short,default"]
+    environment:
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
     volumes:
       - inkcast-dev-sites:/home/frappe/frappe-bench/sites
       - inkcast-dev-logs:/home/frappe/frappe-bench/logs
@@ -156,6 +165,8 @@ services:
     networks: [frappe_network]
     restart: unless-stopped
     command: [bench, schedule]
+    environment:
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
     volumes:
       - inkcast-dev-sites:/home/frappe/frappe-bench/sites
       - inkcast-dev-logs:/home/frappe/frappe-bench/logs
@@ -166,6 +177,8 @@ services:
     networks: [frappe_network]
     restart: unless-stopped
     command: [node, /home/frappe/frappe-bench/apps/frappe/socketio.js]
+    environment:
+      PYTHONPATH: /home/frappe/frappe-bench/apps/inkcast_custom
     volumes:
       - inkcast-dev-sites:/home/frappe/frappe-bench/sites
       - inkcast-dev-logs:/home/frappe/frappe-bench/logs

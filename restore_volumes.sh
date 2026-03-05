@@ -49,11 +49,35 @@ if [[ "${#VOLUMES[@]}" -eq 0 ]]; then
   exit 1
 fi
 
+resolve_archive_name() {
+  local volume="$1"
+
+  if [[ -f "${LATEST_BACKUP_DIR}/${volume}.tgz" ]]; then
+    printf '%s.tgz\n' "${volume}"
+    return 0
+  fi
+
+  if [[ "${MODE}" == "dev" && "${volume}" == inkcast-dev-* ]]; then
+    local prod_volume="${volume/inkcast-dev-/inkcast-}"
+
+    if [[ -f "${LATEST_BACKUP_DIR}/${prod_volume}.tgz" ]]; then
+      printf '%s.tgz\n' "${prod_volume}"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+declare -A ARCHIVES=()
+
 for volume in "${VOLUMES[@]}"; do
-  if [[ ! -f "${LATEST_BACKUP_DIR}/${volume}.tgz" ]]; then
-    echo "Missing archive for volume ${volume}: ${LATEST_BACKUP_DIR}/${volume}.tgz" >&2
+  if ! archive_name="$(resolve_archive_name "${volume}")"; then
+    echo "Missing archive for volume ${volume} in ${LATEST_BACKUP_DIR}" >&2
     exit 1
   fi
+
+  ARCHIVES["${volume}"]="${archive_name}"
 done
 
 mapfile -t RUNNING_SERVICES < <(docker compose -f "${COMPOSE_FILE}" ps --services --status running || true)
@@ -78,7 +102,8 @@ fi
 
 restore_volume() {
   local volume="$1"
-  local archive_path="${LATEST_BACKUP_DIR}/${volume}.tgz"
+  local archive_name="${ARCHIVES[${volume}]}"
+  local archive_path="${LATEST_BACKUP_DIR}/${archive_name}"
 
   echo "Restoring ${volume} from ${archive_path}"
   docker volume create "${volume}" >/dev/null
@@ -87,7 +112,7 @@ restore_volume() {
     -v "${volume}:/to" \
     -v "$(pwd)/${LATEST_BACKUP_DIR}:/backup:ro" \
     alpine \
-    sh -lc "find /to -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; tar xzf /backup/${volume}.tgz -C /to"
+    sh -lc "find /to -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; tar xzf /backup/${archive_name} -C /to"
 }
 
 for volume in "${VOLUMES[@]}"; do
